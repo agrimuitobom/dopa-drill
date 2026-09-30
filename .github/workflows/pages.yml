@@ -27,6 +27,8 @@ jobs:
         with:
           node-version: 20
       - run: node --test tests/*.test.mjs
+      - name: Stamp the service worker version
+        run: sed -i "s/const VERSION = 'dev';/const VERSION = '${GITHUB_SHA::8}';/" app/sw.js
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

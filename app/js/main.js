@@ -2627,3 +2627,10 @@ startClock();
 document.fonts.ready.then(layoutActors);
 layoutActors();
 Object.assign(window.__dopa, { hanamaru, applyLook, fx, fxBack, bg, hero, actors, crowd, press, startGame, startExtra, fmtDopa, store, progress, stats, quests, trophyState, checkTrophies });
+
+// Offline support (PWA). Skipped on local dev servers so edits show up at once;
+// add ?sw to the URL to try it locally.
+const LOCAL = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+if ('serviceWorker' in navigator && (!LOCAL || params.has('sw'))) {
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
