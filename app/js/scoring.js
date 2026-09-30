@@ -40,9 +40,9 @@ export function addDopa(L, base, combo) {
 }
 
 // Time allowed to enter the next answer cell before the combo breaks
-// (provisional). Harder skills (higher grade) get longer; the first cell of
-// a problem adds time to read it.
-export const COMBO_TIME = { base: 3000, perGrade: 600, read: 2500 };
+// (provisional). Harder skills (higher level) get longer; the first cell of
+// a problem adds time to read it (every quiz answer is a first cell).
+export const COMBO_TIME = { base: 4000, perGrade: 800, read: 4000 };
 export function comboWindowMs(grade = 3, first = false) {
   const g = Math.min(6, Math.max(1, grade || 3));
   return COMBO_TIME.base + COMBO_TIME.perGrade * (g - 1) + (first ? COMBO_TIME.read : 0);

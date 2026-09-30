@@ -1,7 +1,7 @@
 // Local-only persistence (localStorage). Nothing is sent to a server.
 // Every read tolerates missing, blocked, or corrupted storage.
 
-const KEY = 'dopa-drill:v1';
+const KEY = 'dopa-drill-agri:v1';
 const VERSION = 1;
 
 export function defaultState() {

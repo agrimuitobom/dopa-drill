@@ -16,5 +16,5 @@ test('prerequisites never come from a later grade and the graph is acyclic', () 
 test('every grade and lane is populated', () => {
   for (let g = 1; g <= 6; g++) assert.ok(SKILLS.some((s) => s.grade === g), `grade ${g}`);
   LANES.forEach((_, i) => assert.ok(SKILLS.some((s) => s.lane === i), `lane ${i}`));
-  assert.ok(SKILLS.length >= 50);
+  assert.ok(SKILLS.length >= 24);
 });

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#3b6bff">
-  <meta name="description" content="算数を解くたびに、演出と音がどんどんインフレするドリル。">
+  <meta name="description" content="農業クイズに答えるたびに、演出と音がどんどんインフレするドリル。">
   <title>ドパドリル</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
@@ -35,9 +35,9 @@
       <div class="modes" id="modes">
         <button type="button" id="start" class="big-btn level-btn">じぶんレベル<small id="level-sub">はじめは じつりょくチェック</small></button>
         <button type="button" id="start-review" class="sub-btn review-btn review-main" hidden>ふくしゅう <b id="review-count">0</b></button>
-        <div class="grades" role="group" aria-label="学年べつ">
-          <button type="button" data-grade="1">1<small>ねんせい</small></button><button type="button" data-grade="2">2<small>ねんせい</small></button><button type="button" data-grade="3">3<small>ねんせい</small></button>
-          <button type="button" data-grade="4">4<small>ねんせい</small></button><button type="button" data-grade="5">5<small>ねんせい</small></button><button type="button" data-grade="6">6<small>ねんせい</small></button>
+        <div class="grades" role="group" aria-label="レベルべつ">
+          <button type="button" data-grade="1"><small>レベル</small>1</button><button type="button" data-grade="2"><small>レベル</small>2</button><button type="button" data-grade="3"><small>レベル</small>3</button>
+          <button type="button" data-grade="4"><small>レベル</small>4</button><button type="button" data-grade="5"><small>レベル</small>5</button><button type="button" data-grade="6"><small>レベル</small>6</button>
         </div>
         <div class="mode-row">
           <button type="button" id="open-tree" class="sub-btn">スキルツリー <b id="tree-badge"></b></button>
@@ -59,7 +59,7 @@
         <div class="cal-week" aria-hidden="true"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div>
         <div class="cal-grid" id="cal-grid" role="grid"></div>
       </section>
-      <p class="hint">数字キーとBackspaceでも操作できます</p>
+      <p class="hint">数字キーの1〜4でも答えられます</p>
     </section>
 
     <!-- Skill tree -->
@@ -121,16 +121,16 @@
       <section class="card" id="card" aria-labelledby="qtitle">
         <div class="marquee" aria-hidden="true"></div>
         <div class="card-top"><span class="chip" id="qtitle">たしざん</span><span class="qno" id="qno">第1問</span></div>
-        <div class="sheet-wrap"><div class="sheet" id="sheet" role="group" aria-label="計算"></div></div>
+        <div class="sheet-wrap"><div class="sheet" id="sheet" role="group" aria-label="もんだい"></div></div>
         <p class="step-label" id="step-label" aria-live="polite">一の位</p>
         <div class="stamp" id="stamp" aria-hidden="true"></div>
         <div class="reach-tag" id="reach-tag" aria-hidden="true">あと1けた</div>
       </section>
-      <div class="pad" id="pad" role="group" aria-label="数字の入力">
-        <button type="button" data-key="7">7</button><button type="button" data-key="8">8</button><button type="button" data-key="9">9</button>
-        <button type="button" data-key="4">4</button><button type="button" data-key="5">5</button><button type="button" data-key="6">6</button>
-        <button type="button" data-key="1">1</button><button type="button" data-key="2">2</button><button type="button" data-key="3">3</button>
-        <button type="button" data-key="Backspace" class="del" aria-label="1けた消す">⌫</button><button type="button" data-key="0" class="zero">0</button>
+      <div class="pad quiz-pad" id="pad" role="group" aria-label="こたえを えらぶ">
+        <button type="button" data-key="1"><b>1</b><span></span></button>
+        <button type="button" data-key="2"><b>2</b><span></span></button>
+        <button type="button" data-key="3"><b>3</b><span></span></button>
+        <button type="button" data-key="4"><b>4</b><span></span></button>
       </div>
     </section>
 

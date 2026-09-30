@@ -2,7 +2,7 @@
 // escalating visuals and sound.
 import { startClock, onFrame, wait, tween, clamp, lerp, rand, pick, chance, centerOf, params,
   easeOutBack, easeOutCubic, easeInCubic, easeInOutCubic, easeOutQuint } from './core.js';
-import { makeRng, generate, makeProblem, signature, BASIC_SETS, EXTRA_TIERS } from './problems.js';
+import { makeRng, makeProblem, signature } from './problems.js';
 import { AudioEngine } from './audio.js';
 import { Dopakichi, COSTUMES, dopakichiSVG } from './dopakichi.js';
 import { FX } from './fx.js';
@@ -198,7 +198,7 @@ function questPop(q) {
   })();
 }
 const REVIEW_MAX = 40;
-const MODE_LABEL = { level: 'じぶんレベル', grade: (g) => `${g}ねんせい`, review: 'ふくしゅう', practice: 'れんしゅう', drill: 'ドリル' };
+const MODE_LABEL = { level: 'じぶんレベル', grade: (g) => `レベル${g}`, review: 'ふくしゅう', practice: 'れんしゅう', drill: 'ドリル' };
 
 // kind: 'level' | 'grade' | 'review' | 'practice' | 'drill'
 function makePlan(kind, arg) {
@@ -214,14 +214,12 @@ function makePlan(kind, arg) {
     const upper = SKILLS.filter((x) => x.grade >= 4).map((x) => x.id);
     return { mode: 'demo', basic, extra: () => upper[Math.floor(S.rng() * upper.length)] };
   }
-  if (kind === 'drill' || params.has('demo')) return { mode: 'drill', legacy: true, basic: BASIC_SETS[S.N] || BASIC_SETS[10] };
   return levelPlan(prog, S.N, S.rng);
 }
 
 function nextProblem(i) {
   const plan = S.plan;
   if (plan.mode === 'review') return structuredClone(plan.items[i].problem);
-  if (plan.legacy) return generate(plan.basic[i], S.rng, i === 0 ? { kind: 'add', a: 27, b: 35 } : null);
   const skill = params.get('skill') || (plan.placement ? plan.pick() : plan.basic[i]);
   return sessionProblem(skill);
 }
@@ -250,6 +248,7 @@ function applyLevel(E, { key, bpm } = {}) {
 function renderSheet(p) {
   sheet.innerHTML = '';
   sheet.className = `sheet ${p.kind}`;
+  if (p.kind === 'quiz') { renderQuiz(p); return; }
   sheet.style.setProperty('--cols', p.cols);
   sheet.style.setProperty('--rows', p.rows);
   S.cells = {}; S.lines = {};
@@ -284,8 +283,35 @@ function renderSheet(p) {
   fitSheet(p);
 }
 
+// Four-choice quiz: the question on the card, the choices on the pad buttons,
+// and one answer box that Dopakichi carries the chosen number into.
+function renderQuiz(p) {
+  S.cells = {}; S.lines = {};
+  const q = document.createElement('p');
+  q.className = 'quiz-q';
+  q.textContent = p.text;
+  const box = document.createElement('div');
+  box.className = 'quiz-ans';
+  box.innerHTML = '<span>こたえ</span>';
+  const cell = document.createElement('div');
+  cell.className = 'cell input';
+  cell.dataset.id = 'ans';
+  cell.setAttribute('aria-label', 'こたえ');
+  box.appendChild(cell);
+  sheet.append(q, box);
+  S.cells.ans = cell;
+  for (const [key, b] of Object.entries(padButtons)) {
+    const i = Number(key) - 1;
+    b.disabled = false;
+    b.classList.remove('picked-bad', 'picked-ok');
+    b.querySelector('span').textContent = p.choices[i] || '';
+    b.hidden = !p.choices[i];
+  }
+}
+
 // Size the grid so any layout (wide expressions, tall long division) fits the card.
 function fitSheet(p) {
+  if (p.kind === 'quiz') return;
   const wrap = sheet.parentElement;
   const availW = Math.max(200, wrap.clientWidth - 16);
   const availH = parseFloat(getComputedStyle(wrap).minHeight) || 200;
@@ -368,8 +394,7 @@ async function setupProblem() {
     const tier = Math.floor(S.extra.solved / 3);
     E = 1 + Math.min(0.5, tier * 0.1);
     applyLevel(E, { key: 2 + Math.min(tier, 5), bpm: 134 + tier * 5 });
-    if (S.plan.legacy) { const pool = EXTRA_TIERS[Math.min(tier, EXTRA_TIERS.length - 1)]; S.problem = generate(pool[S.extra.solved % pool.length], S.rng); }
-    else S.problem = sessionProblem(params.get('skill') || S.plan.extra(S.extra.solved));
+    S.problem = sessionProblem(params.get('skill') || S.plan.extra(S.extra.solved));
   } else {
     E = basicE(S.qi);
     applyLevel(E, { key: S.qi === S.N - 1 ? 2 : 0 });
@@ -431,6 +456,7 @@ function press(key, btn = padButtons[key]) {
   const p = S.problem;
   const st = p.steps[S.step];
   if (!st) return;
+  if (!btn || btn.disabled) return;
   const cell = S.cells[st.cell];
   audio.keyTap(S.combo);
   const from = btn ? centerOf(btn) : centerOf(cell);
@@ -444,6 +470,7 @@ function press(key, btn = padButtons[key]) {
     cell.classList.remove('bad', 'active', 'has');
     cell.classList.add('ok', 'pending');
     cell.textContent = key;
+    btn.classList.add('picked-ok');
     bumpDopa(cell);
     carry(from, cell, key, () => { cell.classList.remove('pending'); onCorrect(st, cell, last); });
     if (!last) activate(S.step);
@@ -456,6 +483,8 @@ function press(key, btn = padButtons[key]) {
     updateTally();
     cell.classList.add('bad', 'has', 'pending');
     cell.textContent = key;
+    btn.classList.add('picked-bad');
+    btn.disabled = true;
     S.shownWrong = key;
     carry(from, cell, key, () => { cell.classList.remove('pending'); onWrong(cell, st); });
   }
@@ -1255,7 +1284,8 @@ function demoTick(t) {
     const room = S.mode === 'extra' || S.wrongInQ || (DEMO.slipped || 0) < Math.floor(S.N * 0.2);
     const slip = room && !S.shownWrong && Math.random() < (S.mode === 'extra' ? 0.05 : 0.1);
     if (slip && S.mode !== 'extra' && !S.wrongInQ) DEMO.slipped = (DEMO.slipped || 0) + 1;
-    const key = slip ? String((Number(st.digit) + 1 + Math.floor(Math.random() * 8)) % 10) : st.digit;
+    const n = S.problem.choices ? S.problem.choices.length : 10;
+    const key = slip ? String(((Number(st.digit) - 1 + 1 + Math.floor(Math.random() * (n - 1))) % n) + 1) : st.digit;
     press(key, padButtons[key]);
     DEMO.next = t + (slip ? 650 : rand(230, 480) * (S.mode === 'extra' ? 0.8 : 1));
   }
@@ -1866,7 +1896,7 @@ function toast(msg) {
 
 // ---------------------------------------------------------------- calendar
 const cal = { y: new Date().getFullYear(), m: new Date().getMonth(), seen: new Set() };
-const MODE_NAMES = { drill: (h) => `${h.count || ''}問ドリル`, level: () => 'じぶんレベル', grade: (h) => `${h.grade}ねんせい`, review: () => 'ふくしゅう', practice: (h) => `れんしゅう（${SKILL[h.skill]?.name || ''}）` };
+const MODE_NAMES = { drill: (h) => `${h.count || ''}問ドリル`, level: () => 'じぶんレベル', grade: (h) => `レベル${h.grade}`, review: () => 'ふくしゅう', practice: (h) => `れんしゅう（${SKILL[h.skill]?.name || ''}）` };
 const stampSvg = (score) => {
   const gold = score > 100;
   const col = gold ? '#ffb000' : '#ff4f6d';
@@ -2543,7 +2573,7 @@ addEventListener('keydown', (e) => {
   if (S.scene) return;
   if (!$('#day-log').hidden) { if (e.key === 'Escape') $('#day-log').hidden = true; return; }
   if (e.key === 'Escape' && S.screen !== 'title') { e.preventDefault(); askToTitle(); return; }
-  if (/^[0-9]$/.test(e.key)) { audio.unlock(); press(e.key); e.preventDefault(); }
+  if (/^[0-9]$/.test(e.key)) { audio.unlock(); if (padButtons[e.key]) press(e.key); e.preventDefault(); }
   else if (e.key === 'Backspace') { press('Backspace'); e.preventDefault(); }
 });
 addEventListener('pointermove', (e) => { if (S.screen !== 'play' && !S.guideOpen) hero.lookAt({ x: e.clientX, y: e.clientY }); });

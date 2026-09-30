@@ -1,87 +1,47 @@
-// Every skill generator yields consistent, well-formed problems (id020).
+// Every skill yields well-formed four-choice quiz problems.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { makeRng, makeProblem, signature } from '../app/js/problems.js';
 import { SKILLS } from '../app/js/skills.js';
+import { BANK } from '../app/js/quizbank.js';
 
-const num = (s) => Number(String(s).replace(/,/g, ''));
-// Evaluate "a op b" texts produced by the generators.
-function evalText(t) {
-  const m = String(t).match(/^([\d.]+) ([+−×÷]) ([\d.]+)$/);
-  if (!m) return null;
-  const a = num(m[1]); const b = num(m[3]);
-  return { '+': a + b, '−': a - b, '×': a * b, '÷': a / b }[m[2]];
-}
-
-function checkLayout(p) {
-  const occ = new Map();
-  for (const c of p.cells) {
-    if (c.kind === 'dot' || (c.kind === 'auto' && c.text === '.')) continue;
-    for (let dr = 0; dr < (c.rs || 1); dr++) for (let dc = 0; dc < (c.cs || 1); dc++) {
-      const k = `${c.r + dr},${c.c + dc}`;
-      // Empty borrow-mark placeholders may share nothing either.
-      assert.ok(!occ.has(k), `${p.skill} ${p.text}: overlap at ${k} (${occ.get(k)} / ${c.id})`);
-      occ.set(k, c.id);
-    }
-    assert.ok(c.r >= 0 && c.r < p.rows && c.c >= 0 && c.c + (c.cs || 1) <= p.cols, `${p.skill} ${p.text}: ${c.id} out of grid`);
-  }
-  assert.ok(p.cols <= 13 && p.rows <= 12, `${p.skill} ${p.text}: grid ${p.cols}x${p.rows}`);
-  const ids = new Set(p.cells.map((c) => c.id));
-  for (const st of p.steps) {
-    assert.ok(ids.has(st.cell), `${p.skill}: step cell ${st.cell}`);
-    assert.match(st.digit, /^\d$/);
-    for (const a of st.after) assert.ok(ids.has(a) || (p.lines || []).some((l) => l.id === a), `${p.skill}: after ${a}`);
-  }
-  assert.ok(p.steps.length >= 1);
-}
-
-function checkAnswer(p) {
-  const typed = p.steps.map((s) => s.digit).join('');
-  if (p.kind === 'add' || p.kind === 'sub' || p.kind === 'mul') {
-    const row = Math.max(...p.steps.map((s) => p.cells.find((c) => c.id === s.cell).r));
-    const res = p.cells.filter((c) => c.r === row && c.kind === 'input').sort((a, b) => a.c - b.c).map((c) => c.text).join('');
-    assert.equal(res, p.answer.replace('.', ''), `${p.skill} ${p.text}`);
-    const v = evalText(p.text);
-    assert.ok(Math.abs(v - num(p.answer)) < 1e-9, `${p.skill} ${p.text} = ${p.answer} (expected ${v})`);
-  } else if (p.kind === 'div') {
-    const q = p.cells.filter((c) => c.r === 0 && c.kind === 'input').sort((a, b) => a.c - b.c).map((c) => c.text).join('');
-    assert.equal(Number(q), Math.floor(p.a / p.b), p.text);
-    assert.equal(p.rem, p.a % p.b, p.text);
-  } else {
-    const expect = p.answer.replace(/ あまり /, '').replace(/と/, '').replace('.', '');
-    // Fractions are typed denominator first.
-    const fr = p.answer.match(/^(?:(\d+)と)?(\d+)\/(\d+)$/);
-    const want = fr ? `${fr[1] || ''}${fr[3]}${fr[2]}` : expect;
-    assert.equal(typed, want, `${p.skill} ${p.text} -> ${p.answer}`);
-    const v = evalText(p.text);
-    if (v !== null && !p.answer.includes('あまり')) assert.ok(Math.abs(v - num(p.answer)) < 1e-9, `${p.skill} ${p.text} = ${p.answer}`);
-  }
-}
-
-test('all skills generate valid problems', () => {
-  const rng = makeRng(2026);
+test('every skill has a bank of distinct, well-formed questions', () => {
+  assert.deepEqual(Object.keys(BANK).sort(), SKILLS.map((s) => s.id).sort());
   for (const s of SKILLS) {
-    for (let i = 0; i < 250; i++) {
-      const p = makeProblem(s.id, rng);
-      checkLayout(p);
-      checkAnswer(p);
+    const list = BANK[s.id];
+    assert.ok(list.length >= 6, `${s.id}: ${list.length} questions`);
+    assert.equal(new Set(list.map((q) => q[0])).size, list.length, `${s.id}: duplicate question`);
+    for (const [text, right, wrong] of list) {
+      assert.ok(text && right, `${s.id}: empty entry`);
+      assert.equal(wrong.length, 3, `${s.id}: ${text}`);
+      assert.equal(new Set([right, ...wrong]).size, 4, `${s.id}: duplicate choice in ${text}`);
     }
   }
 });
 
-test('recent signatures are avoided', () => {
-  // Even the smallest skill (10 = a + b, 9 combinations) must not repeat
-  // before 8 problems; larger skills must go 15 without a repeat.
-  const rng = makeRng(99);
+test('problems keep the right answer behind the input digit, in any order', () => {
+  const rng = makeRng(7);
   for (const s of SKILLS) {
-    const recent = new Set();
-    let firstRepeat = Infinity;
-    for (let i = 0; i < 15; i++) {
-      const p = makeProblem(s.id, rng, recent);
-      if (recent.has(signature(p)) && firstRepeat === Infinity) firstRepeat = i;
-      recent.add(signature(p));
+    const slots = new Set();
+    for (let i = 0; i < 60; i++) {
+      const p = makeProblem(s.id, rng);
+      assert.equal(p.kind, 'quiz');
+      assert.equal(p.skill, s.id);
+      assert.equal(p.steps.length, 1);
+      const st = p.steps[0];
+      assert.match(st.digit, /^[1-4]$/);
+      assert.equal(p.choices[Number(st.digit) - 1], p.answer);
+      assert.ok(p.cells.some((c) => c.id === st.cell && c.kind === 'input'));
+      assert.ok(signature(p).includes(p.text));
+      slots.add(st.digit);
     }
-    const need = s.id === 'g1-compose10' ? 8 : 15;
-    assert.ok(firstRepeat >= need, `${s.id} repeated at ${firstRepeat}`);
+    assert.ok(slots.size >= 3, `${s.id}: answer always in ${[...slots]}`);
   }
+});
+
+test('recent signatures are avoided while fresh questions remain', () => {
+  const rng = makeRng(3);
+  const recent = new Set();
+  const id = SKILLS[0].id;
+  for (let i = 0; i < BANK[id].length; i++) { const p = makeProblem(id, rng, recent); assert.ok(!recent.has(signature(p))); recent.add(signature(p)); }
 });

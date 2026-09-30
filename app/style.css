@@ -294,6 +294,23 @@ body.lv4 .pad button[data-key="6"], body.lv4 .pad button[data-key="2"], body.lv4
 body.lv8 .pad button { box-shadow: 0 5px 0 var(--ink), 0 0 calc(var(--kick) * 18px) rgba(255, 210, 63, .9); }
 .pad button:disabled { opacity: .5; }
 
+/* ------------------------------------------------------------ quiz */
+.sheet.quiz { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; padding: 0 6px; }
+.quiz-q { margin: 0; font-family: var(--round); font-weight: 900; font-size: clamp(16px, 4.6vw, 21px); line-height: 1.5; text-align: left; color: var(--ink); word-break: auto-phrase; }
+.quiz-ans { display: flex; align-items: center; gap: 10px; font-family: var(--round); font-weight: 900; font-size: 15px; color: #4a4f86; }
+.quiz-ans .cell.input { width: 52px; height: 52px; margin: 0; font-size: 36px; }
+.pad.quiz-pad { grid-template-columns: 1fr; gap: 8px; }
+.pad.quiz-pad button { display: flex; align-items: center; gap: 12px; height: auto; min-height: clamp(46px, 6.6dvh, 58px); padding: 6px 14px 6px 8px; text-align: left; font-size: clamp(15px, 4.2vw, 18px); line-height: 1.3; }
+.pad.quiz-pad button b { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--ink); color: #fff; font-size: 20px; }
+.pad.quiz-pad button span { flex: 1; min-width: 0; }
+body .pad.quiz-pad button.picked-bad { background: #efe8ff; text-decoration: line-through; text-decoration-color: #a77bff; }
+body .pad.quiz-pad button.picked-ok { background: #dcfaef; }
+.pad.quiz-pad button:disabled { opacity: .45; }
+@media (max-height: 840px) {
+  .pad.quiz-pad { gap: 6px; }
+  .pad.quiz-pad button { height: auto; min-height: 44px; padding-block: 4px; }
+}
+
 /* ------------------------------------------------------------ results */
 #screen-result, #screen-final { align-items: safe center; justify-content: center; padding: 20px 16px; overflow-y: auto; }
 #screen-result .result-card, #screen-final .result-card { margin: auto 0; flex: none; }
@@ -385,7 +402,7 @@ body.reduced .logo span, body.reduced .spot, body.reduced .marquee, body.reduced
 .level-btn small { font-size: 13px; letter-spacing: 0; }
 .grades { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: min(100%, 340px); }
 .grades button { height: 52px; border: 3px solid var(--ink); border-radius: 16px; background: #fff; font-family: var(--chunky); font-size: 24px; box-shadow: 0 4px 0 var(--ink); }
-.grades button small { font-family: var(--round); font-weight: 900; font-size: 12px; margin-left: 2px; }
+.grades button small { font-family: var(--round); font-weight: 900; font-size: 12px; margin-right: 3px; }
 .grades button:nth-child(6n+1) { background: #ffe3ef; } .grades button:nth-child(6n+2) { background: #e3ebff; } .grades button:nth-child(6n+3) { background: #fff4c4; }
 .grades button:nth-child(6n+4) { background: #d9fbef; } .grades button:nth-child(6n+5) { background: #efe6ff; } .grades button:nth-child(6n+6) { background: #ffe6dc; }
 .grades button:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
